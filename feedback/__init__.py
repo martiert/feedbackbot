@@ -38,6 +38,8 @@ admin_help = '''
  * remove contact <email> - Remove contact person, along with his customers
  * add admin <email> - Create admin, or give admin privileges to existing contact person
  * remove admin <email> - Remove admin privileges from contact person
+ * list admins - List all administrators on the system
+ * list contacts - List all contacts on the system
  * steal customer <from> <customer> - Steal customer from contact person
 '''
 
@@ -447,6 +449,48 @@ class Feedback:
             message.personEmail,
             response.format(email))
 
+    async def list_admins(self, api, message):
+        is_admin = self._db.find_one({'_id': message.personEmail, 'admin': True})
+        if not is_admin:
+            answer(api, message)
+            return
+
+        result = 'Administrators:'
+        administrators = self._db.find({'admin': True})
+        for admin in administrators:
+            result += '\n * {}'.format(admin['_id'])
+
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            api.messages.create,
+            None,
+            None,
+            message.personEmail,
+            None,
+            result)
+
+    async def list_contacts(self, api, message):
+        is_admin = self._db.find_one({'_id': message.personEmail, 'admin': True})
+        if not is_admin:
+            answer(api, message)
+            return
+
+        result = 'Contacts:'
+        administrators = self._db.find({})
+        for admin in administrators:
+            result += '\n * {}'.format(admin['_id'])
+
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            api.messages.create,
+            None,
+            None,
+            message.personEmail,
+            None,
+            result)
+
     async def help(self, api, message):
         is_contact = self._db.find_one({'_id': message.personEmail})
         if not is_contact:
@@ -515,6 +559,8 @@ class Feedback:
         self._server.listen('^help$', self.help)
         self._server.listen('^ask ', self.ask)
         self._server.listen('^get answers$', self.get_answers)
+        self._server.listen('^list admins$', self.list_admins)
+        self._server.listen('^list contacts$', self.list_contacts)
         self._server.listen('^list customers$', self.list_customers)
         self._server.listen('^list emails', self.list_emails)
         self._server.listen('^give customer', self.give_customer)

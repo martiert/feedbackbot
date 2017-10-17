@@ -19,28 +19,28 @@ logger.addHandler(handler)
 
 help_message = '''
  * help - Show this message
- * ask <question> - Ask a question to all of your customers, also fetches the answers for your previous question
+ * ask `<question>` - Ask a question to all of your customers, also fetches the answers for your previous question
     1. This removes the answers from the database. After this operation you alone have the answers to the previous question
  * get answers - Fetch answers for your current question
- * add customer <customer>: <emails> - Add customer, or emails to existing customer.
+ * add customer `<customer name>`: `<emails>` - Add customer, or emails to existing customer.
     1. customer name can not contain ':' characters
     2. customer name can contain spaces
     3. emails are split with spaces
- * remove customer <customer>: <emails> - Remove emails from existing customer entry
- * remove customer <customer>: all - Completely remove customer
+ * remove customer `<customer name>`: `<emails>` - Remove emails from existing customer entry
+ * remove customer `<customer>`: all - Completely remove customer
  * list customers - List all your customers
- * list emails <customer> - List emails for given customer
- * give customer <receiver> <customer> - Give customer to receiver
+ * list emails `<customer>` - List emails for given customer
+ * give customer `<receiver>` `<customer>` - Give customer to receiver
 '''
 
 admin_help = '''
- * add contact <email> - Add contact person
- * remove contact <email> - Remove contact person, along with his customers
- * add admin <email> - Create admin, or give admin privileges to existing contact person
- * remove admin <email> - Remove admin privileges from contact person
+ * add contact `<email>` - Add contact person
+ * remove contact `<email>` - Remove contact person, along with his customers
+ * add admin `<email>` - Create admin, or give admin privileges to existing contact person
+ * remove admin `<email>` - Remove admin privileges from contact person
  * list admins - List all administrators on the system
  * list contacts - List all contacts on the system
- * steal customer <from> <customer> - Steal customer from contact person
+ * steal customer `<from>` `<customer>` - Steal customer from contact person
 '''
 
 
@@ -251,7 +251,7 @@ class Feedback:
         if '' in emails:
             emails.remove('')
 
-        logger.info('{} added {} to customer {}'.format(message.personEmail, content, customer))
+        logger.info('{} added {} to customer {}'.format(message.personEmail, emails, customer))
         question = is_contact.get('question', None)
         for email in emails:
             try:
@@ -265,8 +265,9 @@ class Feedback:
                         question)
 
                 self._customers.insert({'_id': email, 'contact': message.personEmail, 'customer': customer})
-            except ciscosparkapi.exceptions.SparkApiError:
+            except ciscosparkapi.exceptions.SparkApiError as e:
                 logger.warn('{} Failed to send question to new user {}'.format(message.personEmail, email))
+                logger.warn(e)
                 await loop.run_in_executor(
                     None,
                     api.messages.create,
